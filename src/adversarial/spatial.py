@@ -1,29 +1,17 @@
 import torch
-import torchattacks
 import csv
 import os
-import torchvision
 
 from torchvision import transforms as T
 from torchvision.io import encode_jpeg, decode_image
 from src.model.pretrained import CNNLoader
 from src.adversarial.hpf_mask import HPFMasker
-from src.adversarial.black_box.boundary_attack import BoundaryAttack, HPFBoundaryAttack
-from src.adversarial.black_box.nes_attack import NESAttack
-from src.adversarial.black_box.square_attack import SquareAttack, HPFSquareAttack 
-from src.adversarial.black_box.pg_rgf import PriorRGFAttack, HPFPriorRGFAttack
 from src.adversarial.iqm import ImageQualityMetric
-from src.adversarial.custom_cw import CW, WRCW, YCW
-from src.adversarial.robust_cw import VarRCW, RCW
-from src.adversarial.perc_cw import PerC_CW
-from src.adversarial.cvfgsm import CVFGSM
+from src.adversarial.custom_cw import CW
+from src.adversarial.robust_cw import RCW
 from src.adversarial.jpeg_ifgm import JIFGSM
-from src.adversarial.unipgd import PGD, UniPGD
-from src.adversarial.uvmifgsm import UVMIFGSM, VMIFGSM
-from src.adversarial.uap_attack import UAP
-from src.adversarial.dct_attack import DCTCW
 from src.adversarial.adversarial_rounding import FastAdversarialRounding
-from src.adversarial.fgsm import FGSM, HpfFGSM
+from src.adversarial.fgsm import FGSM
 
 class AttackLoader:
     
@@ -108,23 +96,6 @@ class AttackLoader:
                                     jpeg_compr_obj=self.jpeg_compr_obj,
                                     *args, 
                                     **kwargs)
-        elif attack_type in ['boundary_attack',
-                            'nes', 
-                            'hpf_boundary_attack',
-                            'square_attack',
-                            'hpf_square_attack',
-                            'pg_rgf',
-                            'hpf_pg_rgf']:
-            attack = BlackBoxAttack(attack_type,
-                                    model=self.model,
-                                    surrogate_model=self.surrogate_model,
-                                    device=self.device, 
-                                    model_trms=self.model_trms,
-                                    surrogate_model_trms=self.surrogate_model_trms,
-                                    hpf_masker=hpf_masker,
-                                    input_size=input_size,
-                                    *args, 
-                                    **kwargs)
         else:
             raise ValueError('ATTACK NOT RECOGNIZED. Change spatial_adv_type in options')
         return attack
@@ -161,97 +132,6 @@ class AttackLoader:
     def get_l2(self, orig_img, adv_img):
         distance = (orig_img - adv_img).pow(2).sum().sqrt()
         return (distance / orig_img.max()).item()
-
-class BlackBoxAttack:
-    
-    def __init__(self, 
-                attack_type, 
-                model, 
-                surrogate_model, 
-                model_trms, 
-                surrogate_model_trms, 
-                hpf_masker,
-                input_size,
-                *args, 
-                **kwargs):
-        self.black_box_attack = self.load_attack(attack_type,
-                                                model,
-                                                model_trms,
-                                                surrogate_model,
-                                                surrogate_model_trms,
-                                                hpf_masker,
-                                                input_size,
-                                                *args, 
-                                                **kwargs)
-        self.to_float = T.ConvertImageDtype(torch.float32)
-        self.l2_norm = []
-        self.num_queries_lst = []
-        self.mse_list = []
-        self.n = 1
-    
-    def load_attack(self, 
-                    attack_type, 
-                    model, 
-                    model_trms,
-                    surrogate_model,
-                    surrogate_model_trms,
-                    hpf_masker,
-                    input_size,
-                    *args, 
-                    **kwargs):
-        if attack_type == 'boundary_attack':
-            attack = BoundaryAttack(model, *args, **kwargs)
-        elif attack_type == 'hpf_boundary_attack':
-            attack = HPFBoundaryAttack(model, hpf_masker, *args, **kwargs)
-        elif attack_type == 'nes':
-            attack = NESAttack(model, *args, **kwargs)
-        elif attack_type == 'square_attack':
-            attack = SquareAttack(model, *args, **kwargs)
-        elif attack_type == 'hpf_square_attack':
-            attack = HPFSquareAttack(model, hpf_masker, *args, **kwargs)
-        elif attack_type == 'pg_rgf':
-            attack = PriorRGFAttack(model=model,
-                                    model_trms=model_trms, 
-                                    surrogate_model=surrogate_model, 
-                                    surrogate_model_trms=surrogate_model_trms,
-                                    input_size=input_size,
-                                    num_classes=1000,
-                                    *args, 
-                                    **kwargs)
-        elif attack_type == 'hpf_pg_rgf':
-            attack = HPFPriorRGFAttack(hpf_masker,
-                                    model=model,
-                                    model_trms=model_trms, 
-                                    surrogate_model=surrogate_model, 
-                                    surrogate_model_trms=surrogate_model_trms,
-                                    input_size=input_size,
-                                    num_classes=1000,
-                                    *args, 
-                                    **kwargs)
-            
-        return attack
-
-    def get_l2(self, orig_img, adv_img):
-        distance = (orig_img - adv_img).pow(2).sum().sqrt()
-        return (distance / orig_img.max()).item()
-    
-    def __call__(self, x, target_y):
-        orig_x = x
-        x = self.to_float(x)
-        perturbed_x, num_queries, mse = self.black_box_attack(x, target_y)
-        perturbed_x = perturbed_x.squeeze(0).cpu()
-        self.l2_norm.append(self.get_l2(orig_x.cpu(), (perturbed_x*255).to(torch.uint8)))
-        self.num_queries_lst.append(num_queries)
-        self.mse_list.append(mse)
-        return perturbed_x
-    
-    def set_up_log(self, path_log_dir):
-        self.path_log_dir = path_log_dir
-    
-    def get_attack_metrics(self):
-        avg_num_queries = sum(self.num_queries_lst) / len(self.num_queries_lst)
-        avg_mse = sum(self.mse_list) / len(self.mse_list)
-        return avg_num_queries, avg_mse
         
         
 class WhiteBoxAttack:
@@ -398,60 +278,14 @@ class WhiteBoxAttack:
         return perturbed_x
     
     def load_attack(self, model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs):
-        if attack_type in ['vmifgsm', 'hpf_vmifgsm', 'uvmifgsm', 'cvfgsm', 'mvmifgsm', 'varsinifgsm']:
-            attack = self.load_blackbox(model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs)
-        else:
-            attack = self.load_whitebox(model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs)
-        return attack
-    
-    def load_blackbox(self, model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs):
-        if attack_type == 'vmifgsm':
-            attack = VMIFGSM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'cvfgsm':
-            attack = CVFGSM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'uvmifgsm':
-            attack = UVMIFGSM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'hpf_vmifgsm':
-            attack = torchattacks.attacks.vmifgsm.HpfVMIFGSM(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, hpf_masker=hpf_masker, *args, **kwargs)
-        elif attack_type == 'mvmifgsm':
-            attack = torchattacks.attacks.vmifgsm.MVMIFGSM(model, surrogate_loss, *args, **kwargs)
-        elif attack_type == 'varsinifgsm':
-            attack = torchattacks.attacks.sinifgsm.VarSINIFGSM(model, surrogate_loss, *args, **kwargs)
-        else:
-            raise ValueError('ADVERSARIAL ATTACK NOT RECOGNIZED FROM TYPE. Change spatial_adv_type in options')
-        return attack        
+        attack = self.load_whitebox(model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs)
+        return attack   
     
     def load_whitebox(self, model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs):
         if attack_type == 'fgsm':
             attack = FGSM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'hpf_fgsm':
-            attack = HpfFGSM(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, hpf_masker=hpf_masker, *args, **kwargs)
-        elif attack_type == 'ycbcr_hpf_fgsm':
-            attack = torchattacks.attacks.fgsm.YcbcrHpfFGSM(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, hpf_masker=hpf_masker, *args, **kwargs)
-        elif attack_type == 'bim':
-            attack = torchattacks.attacks.bim.BIM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
         elif attack_type == 'jifgsm':
             attack = JIFGSM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'grad_gaussian_bim':
-            attack = torchattacks.attacks.bim.GradGaussianBIM(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'hpf_bim':
-            attack = torchattacks.attacks.bim.HpfBIM(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, hpf_masker=hpf_masker, *args, **kwargs)
-        elif attack_type == 'pgd':
-            attack = PGD(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'unipgd':
-            attack = UniPGD(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'hpf_pgd':
-            attack = torchattacks.attacks.pgd.HpfPGD(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, hpf_masker=hpf_masker, *args, **kwargs)
-        elif attack_type == 'pgdl2':
-            attack = torchattacks.attacks.pgdl2.PGDL2(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'uap':
-            attack = UAP(model, surrogate_loss, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'hpf_pgdl2':
-            attack = torchattacks.attacks.pgdl2.HpfPGDL2(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, hpf_masker=hpf_masker, *args, **kwargs) #diff for 299(inception) and 224(rest)
-        elif attack_type == 'ycbcr_hpf_pgdl2':
-            attack = torchattacks.attacks.pgdl2.YcbcrHpfPGDL2(model, input_size=self.input_size, surrogate_loss=surrogate_loss, *args, **kwargs) #diff for 299(inception) and 224(rest)
-        elif attack_type == 'sinifgsm':
-            attack = torchattacks.attacks.sinifgsm.SINIFGSM(model, surrogate_loss, *args, **kwargs)
         elif attack_type == 'far':
             attack = FastAdversarialRounding(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, img_size=self.input_size, *args, **kwargs)
         elif attack_type == 'cw':
@@ -459,19 +293,7 @@ class WhiteBoxAttack:
         elif attack_type == 'rcw':
             if self.dataset_type == 'nips17':
                 cqe_init = 'random'
-            elif self.dataset_type == 'cifar10':
-                cqe_init = 'center'
             attack = RCW(model, model_trms=self.model_trms, cqe_init=cqe_init, *args, **kwargs)
-        elif attack_type == 'varrcw':
-            attack = VarRCW(model, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'wrcw':
-            attack = WRCW(model, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'ycw':
-            attack = YCW(model, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'perccw':
-            attack = PerC_CW(model, model_trms=self.model_trms, *args, **kwargs)
-        elif attack_type == 'dctcw':
-            attack = DCTCW(model, model_trms=self.model_trms, *args, **kwargs)
         else:
             raise ValueError('ADVERSARIAL ATTACK NOT RECOGNIZED FROM TYPE. Change spatial_adv_type in options')
         return attack

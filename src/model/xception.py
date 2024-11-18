@@ -1,5 +1,5 @@
 """
-Extended with Loading Class by A. S.
+Extended with Loading Class by A. S. (anonymized for review)
 Source:https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/master/pretrainedmodels/models/xception.py 
 Ported to pytorch thanks to [tstandley](https://github.com/tstandley/Xception-PyTorch)
 @author: tstandley

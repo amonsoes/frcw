@@ -9,7 +9,6 @@ import torch.nn as nn
 
 from src.adversarial.attack_base import Attack
 from diff_jpeg import diff_jpeg_coding
-from src.utils.datautils import apply_along_dim
 
 
 

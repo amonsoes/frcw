@@ -3,7 +3,7 @@
 # https://adversarial-attacks-pytorch.readthedocs.io/en/latest/
 #
 # All credits go to the original author
-# Adjusted by Amon Soares de Souza
+# Adjusted by A. S. (anonymized for review)
 ####################################################
 
 import time

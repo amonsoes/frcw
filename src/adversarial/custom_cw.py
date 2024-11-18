@@ -2,15 +2,14 @@
 # original CW class is transferred from the torchattacks library
 # https://adversarial-attacks-pytorch.readthedocs.io/en/latest/
 #
-# Adjusted by Amon Soares de Souza
-# All other classes by Amon Soares de Souza 
+# Adjusted by A. S. (anonymized for review)
+# All other classes by A. S. (anonymized for review)
 ####################################################
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import csv
-import time
 import random
 
 from kornia.color import ycbcr_to_rgb, rgb_to_ycbcr

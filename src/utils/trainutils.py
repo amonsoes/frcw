@@ -8,7 +8,7 @@ from torch.optim import RAdam, SGD, Adam, lr_scheduler
 from torchmetrics import MetricCollection
 from torchmetrics.classification import Accuracy, Recall, Precision, AveragePrecision, F1Score
 from src.adversarial.asr_metric import ASR, ConditionalAverageRate
-from src.datasets.data import Nips17ImgNetData, CIFAR10Dataset, FlickrFaces
+from src.datasets.data import Nips17ImgNetData
 from src.adversarial.robust_cw import RCW
 
 
@@ -74,10 +74,6 @@ class TrainUtils:
         self.transform_type = data.transform_type
         if isinstance(data, Nips17ImgNetData):
             self.analysis = 'imgnet_classification'
-        elif isinstance(data, CIFAR10Dataset):
-            self.analysis = 'cifar10_classification'
-        elif isinstance(data, FlickrFaces):
-            self.analysis = 'flickr_classification'
         else:
             raise ValueError('ERROR: unknown Dataset type. Add type to analysis type in trainutils.py')
         if adversarial_opt == None:
