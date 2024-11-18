@@ -1,6 +1,6 @@
 # FastRCW
 
-This repository holds the code for the paper "Towards JPEG-compression invariance for adversarial optimization". It contains commands to replicate all experiments and the survey results.
+This repository holds the code for the paper "Towards JPEG-compression invariance for adversarial optimization". It contains commands to replicate all experiments.
 
 <br />
 
