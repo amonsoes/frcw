@@ -191,4 +191,4 @@ python3 run_pretrained.py --dataset nips17 --model_name adv-resnet-fbf --transfo
 
 #### Perceived Quality Experiments
 
-All logs will contain the results of MAD and DISTS. Those can be conveniently printed with the tool cad_asr.py
+All logs will contain the results of MAD and DISTS. Those can be found in the log directory in the file image_quality_metrics.txt
