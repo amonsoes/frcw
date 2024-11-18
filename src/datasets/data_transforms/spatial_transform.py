@@ -1,12 +1,10 @@
 import torch
 import numpy as np
-import random
 
 from torchvision.io import encode_jpeg, decode_image
 from torchvision import transforms as T
 from src.datasets.data_transforms.cooccurrence import BandCMatrix, CrossCMatrix
 from src.datasets.data_transforms.data_helper import StatTensor
-from src.utils.datautils import YCBCRTransform
 
 
 class CustomCompose(T.Compose):
@@ -88,17 +86,6 @@ class SpatialTransforms:
 
             self.transform_val = T.Compose([BandCMatTransform(),
                                         T.ConvertImageDtype(torch.float32)])
-        
-        elif transform == 'ycbcr_transform':
-            self.transform_train = T.Compose([YCBCRTransform(),
-                                            YCBCRTransform.normalize,
-                                            T.ConvertImageDtype(torch.float32),
-                                            T.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
-
-            self.transform_val = T.Compose([YCBCRTransform(),
-                                            YCBCRTransform.normalize,
-                                            T.ConvertImageDtype(torch.float32),
-                                            T.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
 
         elif transform == 'basic_pix_attn_cnn':
             self.transform_train = T.Compose([T.ColorJitter(),

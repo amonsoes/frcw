@@ -2,7 +2,6 @@ import torch
 
 from torchvision import transforms as T
 from src.datasets.data_transforms.spatial_transform import SpatialTransforms, CustomCompose
-from src.datasets.data_transforms.spectral_transform import SpectralTransforms
 from src.adversarial.spatial import Augmenter, AttackLoader
 from torchvision.transforms import InterpolationMode
 
@@ -69,17 +68,6 @@ class PostTransforms:
                                            dataset_type=self.dataset_type,
                                            *args, 
                                            **kwargs)
-
-            transform_train = transforms.transform_train
-            transform_val = transforms.transform_val
-
-        elif transform in ['real_nd_fourier', 'augmented_nd_fourier', 'bi_hpf_transform', 'basic_fr_attn_cnn']:
-            transforms = SpectralTransforms(transform, 
-                                            self.greyscale_opt, 
-                                            self.adversarial_opt, 
-                                            self.dataset_type, 
-                                            *args, 
-                                            **kwargs)
 
             transform_train = transforms.transform_train
             transform_val = transforms.transform_val

@@ -3,7 +3,6 @@ import torch
 from torch import nn
 from tqdm import tqdm
 from src.utils.trainutils import TrainUtils, get_optim
-from src.adversarial.spatial import BlackBoxAttack
 
 class Training:
     
@@ -141,8 +140,6 @@ class CNNTraining(Training):
             self.utils.logger.log_test_results(result, is_targeted=self.data.transforms.adversarial_opt.is_targeted)
             if hasattr(self.data.post_transforms, 'attack'):
                 self.utils.logger.log_iqa(self.data.post_transforms.attack)
-                if isinstance(self.data.post_transforms.attack, BlackBoxAttack):
-                    self.utils.logger.log_black_box_metrics(self.data.post_transforms.attack)
             print('\nTEST COMPLETED. RESULTS:\n')
             print(result)
             print('\n\n')
