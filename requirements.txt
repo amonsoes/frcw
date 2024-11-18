@@ -12,3 +12,4 @@ torch-dct==0.1.6
 torchattacks==3.5.1
 torchmetrics==1.4.1
 tqdm==4.66.5
+kornia==0.7.2
