@@ -75,11 +75,11 @@ Available attacks:
 - Fast Adversarial Rounding [Shi et al. 21](https://ieeexplore.ieee.org/document/9428243)
 
 
-### (2) ASP comparison with the SOTA
+### (2) ASR/CAD comparison with the SOTA
 
 ATTACKS:
 
-This measures the ASP over a set of appropriate Epsilon values. NOTE: Optimization-based attacks are not bound by Epsilon. However, this does not skew the output of ASP, since a perturbation higher than Epsilon will be appropriately reflected in the output. To test a specific attack, replace the --spatial_adv_type with the following options:
+This measures the success rate ASR and the average distortion CAD. To change the attack in the run command (see below), change the argument --spatial_adv_type to one of the following values:
 
 - FastRCW: rcw
 - JPEG IFGSM (Shin et al.): jifgsm
@@ -92,6 +92,8 @@ copy the name of your log directoy (looks like YYYY-DD-MM_ImgNetCNN_model_attack
 ```bash
 python3 cad_asr.py your_log_dir
 ```
+
+This will output the ASR and CAD of the run.
 
 #### White-Box Attacks
 
