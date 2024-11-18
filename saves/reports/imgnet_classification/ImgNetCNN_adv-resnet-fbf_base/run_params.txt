@@ -1,0 +1,9 @@
+CHOSEN PARAMS FOR RUN
+
+analysis_type : imgnet_classification
+model_name : ImgNetCNN_adv-resnet-fbf
+transform : pretrained_imgnet
+lr : 5e-05
+epochs : 15
+batch_size : 16
+adversarial_training : False

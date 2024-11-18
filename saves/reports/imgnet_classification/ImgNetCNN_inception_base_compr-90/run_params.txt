@@ -1,0 +1,10 @@
+CHOSEN PARAMS FOR RUN
+
+analysis_type : imgnet_classification
+model_name : ImgNetCNN_inception
+transform : pretrained
+lr : 5e-05
+epochs : 15
+batch_size : 64
+adversarial_training : False
+jpeg compression: Truejpeg compression rate: 90

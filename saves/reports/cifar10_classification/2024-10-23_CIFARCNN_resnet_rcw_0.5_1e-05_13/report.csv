@@ -1,0 +1,5 @@
+filepath,prediction,label,mad,ssim,dists,l2
+nopathgiven,6,6,0.0,1.0,0.0
+nopathgiven,0,0,0.0,1.0,0.0
+nopathgiven,4,4,0.0,1.0,0.0
+nopathgiven,9,9,0.0,1.0,0.0

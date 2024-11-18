@@ -1,0 +1,5 @@
+filepath,prediction,label
+nopathgiven,5,5,0.0
+nopathgiven,4,4,0.0
+nopathgiven,2,4,1.1573168876566342e-06
+nopathgiven,8,8,0.0

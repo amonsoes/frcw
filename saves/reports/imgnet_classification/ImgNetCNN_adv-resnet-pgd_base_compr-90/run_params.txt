@@ -1,0 +1,11 @@
+CHOSEN PARAMS FOR RUN
+
+analysis_type : imgnet_classification
+model_name : ImgNetCNN_adv-resnet-pgd
+transform : pretrained
+lr : 5e-05
+epochs : 15
+batch_size : 16
+adversarial_training : False
+jpeg compression: True
+jpeg compression rate: 90

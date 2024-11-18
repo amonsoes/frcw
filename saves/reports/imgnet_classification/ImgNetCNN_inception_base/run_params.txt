@@ -1,0 +1,6 @@
+CHOSEN PARAMS FOR RUN
+
+analysis_type:imgnet_classification
+model_name:ImgNetCNN_inception
+transform:pretrained_imgnet
+lr:5e-05

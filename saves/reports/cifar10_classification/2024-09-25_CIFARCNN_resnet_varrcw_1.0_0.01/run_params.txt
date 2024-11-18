@@ -1,0 +1,21 @@
+CHOSEN PARAMS FOR RUN
+
+analysis_type : cifar10_classification
+model_name : CIFARCNN_resnet
+transform : pretrained
+lr : 5e-05
+epochs : 15
+batch_size : 2
+adversarial_training : False
+jpeg compression: True
+jpeg compression rate: 70
+adversarial : True
+adversarial_model : varrcw
+surrogate_model : resnet
+eps : 0.04
+attack_lr : 0.01
+rcw_comp_lower_bound : 75
+constraint type : l2
+ablation : False
+attack_compression : True
+compression_rate : 70

@@ -1,0 +1,7 @@
+RESULTS
+
+MulticlassAccuracy:0.9430000185966492
+MulticlassPrecision:0.9055187702178955
+MulticlassRecall:0.8966519832611084
+MulticlassAveragePrecision:0.9928681254386902
+MulticlassF1Score:0.8949474096298218

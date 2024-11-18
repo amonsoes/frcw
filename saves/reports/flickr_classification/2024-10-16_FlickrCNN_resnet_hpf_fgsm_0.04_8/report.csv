@@ -1,0 +1,4 @@
+filepath,prediction,label,mad,ssim,l2
+./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/GE645LYL3S.jpg,1,0,0.9999999991787767,0.23493164777755737,14.437224388122559
+./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/H0A3WZHOHH.jpg,1,0,0.9999999924119355,0.23811596632003784,13.980331420898438
+./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/BCDZM2AGAT.jpg,1,0,0.9999999642389966,0.3121716380119324,14.335223197937012
