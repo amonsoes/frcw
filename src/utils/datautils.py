@@ -1,5 +1,4 @@
 import torch
-import pytorch_colors as colors
 import torch_dct as dct
 
 from torchvision import transforms as T
@@ -16,40 +15,6 @@ def apply_along_dim(batch, funcs_tuple, jpeg_quality, dim):
     tensors = [decode(tensor) for tensor in enc_tensors]
     batch = torch.stack(tensors, dim=0)
     return batch
-
-
-class YCBCRTransform:
-    
-    def __init__(self):
-        print('Warning: input tensors must be in the format RGB')
-    
-    def __call__(self, tensor):
-        ycbcr = self.get_channels(tensor)
-        return ycbcr
-    
-    @staticmethod
-    def normalize(tensor):
-        tensor / 255
-        return tensor
-
-    @staticmethod
-    def normalize_around_zero(tensor):
-        tensor /= 255
-        tensor -= 0.5
-        
-        return tensor
-
-    @staticmethod
-    def to_int(tensor):
-        tensor += 0.5
-        tensor *= 255
-        return tensor
-        
-    def get_channels(self, tensor):
-        return colors.rgb_to_ycbcr(tensor)
-    
-    def inverse(self, tensor):
-        return colors.ycbcr_to_rgb(tensor)
 
 
 class Patchify:

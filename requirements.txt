@@ -2,10 +2,7 @@ adversarial-robustness-toolbox==1.18.1
 diff_jpeg @ git+https://github.com/necla-ml/Diff-JPEG@e81f082896ba145e35cc129bc7743244e10881e5
 DISTS-pytorch==0.1
 IQA-pytorch==0.1
-numpy @ file:///croot/numpy_and_numpy_base_1708638617955/work/dist/numpy-1.26.4-cp310-cp310-linux_x86_64.whl#sha256=d8cd837ed43e87f77e6efaa08e8de927ca030a1c9c5d04624432d6fb9a74a5ee
-opencv-python==4.10.0.84
 pandas==2.2.2
-pillow @ file:///croot/pillow_1714398848491/work
 scikit-image==0.24.0
 scikit-learn==1.5.1
 scipy==1.14.0
