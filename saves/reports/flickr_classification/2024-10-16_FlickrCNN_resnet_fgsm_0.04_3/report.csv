@@ -1,9 +1,0 @@
-filepath,prediction,label,mad,ssim,l2
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/QHVO2LPUUI.jpg,1,0,0.9999999999316639,0.3101693391799927,15.157485961914062
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/UDP58J2N6K.jpg,1,0,0.9999999905229647,0.2295272946357727,15.48685359954834
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/ACXSN8SJ4R.jpg,1,0,0.999999994840553,0.3388063311576843,15.511795997619629
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/VBN8FRZYYT.jpg,1,0,0.9999999987782926,0.26572108268737793,15.390585899353027
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/KZ93FIDRA2.jpg,1,0,0.9999999999475593,0.3343942165374756,15.089890480041504
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/MI70Q2MCGM.jpg,1,0,0.9999999998091871,0.25734418630599976,15.226594924926758
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/3E9FYTOKO7.jpg,1,0,0.9999999607159918,0.28917044401168823,15.492256164550781
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/A923BRWMV2.jpg,1,0,0.9999999981130817,0.284885048866272,15.153944969177246

@@ -1,5 +1,0 @@
-filepath,prediction,label,mad,ssim,dists,l2
-nopathgiven,8,8,0.0,1.0,0.0
-nopathgiven,4,2,0.0,1.0,0.0
-nopathgiven,5,5,0.0,1.0,0.0
-nopathgiven,1,1,0.0,1.0,0.0

@@ -1,5 +1,0 @@
-IMAGE QUALITY METRICS
-
-Average MAD : 0.0
-Average SSIM : 1.0
-Average DISTS : -5.424022830879949e-08

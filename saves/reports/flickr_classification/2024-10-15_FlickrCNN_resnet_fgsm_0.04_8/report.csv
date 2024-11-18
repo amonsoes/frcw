@@ -1,6 +1,0 @@
-filepath,prediction,label,mad,ssim,l2
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/QIGRWXBB9M.jpg,1,0,0.999999998705145,0.3443666100502014,15.515364646911621
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/WZ3MOWSRAQ.jpg,1,0,0.9999999440846299,0.3234759569168091,15.517910957336426
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/4EAXRJKDOZ.jpg,1,0,0.9999999999123694,0.3958384394645691,15.517319679260254
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/017EMQKL4D.jpg,1,0,0.9999999999640662,0.3676568269729614,15.518643379211426
-./data/140k_flickr_faces/real_vs_fake/real-vs-fake/test/fake/ZZOZ60UUCE.jpg,0,0,0.9999999998647663,0.41416335105895996,15.511327743530273

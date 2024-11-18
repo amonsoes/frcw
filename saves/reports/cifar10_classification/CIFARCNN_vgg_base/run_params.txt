@@ -1,9 +1,0 @@
-CHOSEN PARAMS FOR RUN
-
-analysis_type : cifar10_classification
-model_name : CIFARCNN_vgg
-transform : pretrained
-lr : 5e-05
-epochs : 15
-batch_size : 8
-adversarial_training : False

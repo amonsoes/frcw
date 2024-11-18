@@ -1,9 +1,0 @@
-RESULTS
-
-MulticlassAccuracy:1.0
-MulticlassPrecision:1.0
-MulticlassRecall:1.0
-MulticlassAveragePrecision:1.0
-MulticlassF1Score:1.0
-ASR:0.0
-ConditionalAverageRate:0.0

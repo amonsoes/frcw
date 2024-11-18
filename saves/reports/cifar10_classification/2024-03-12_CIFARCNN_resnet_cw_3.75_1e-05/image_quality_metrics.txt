@@ -1,3 +1,0 @@
-IMAGE QUALITY METRICS
-
-Average MAD : 0.0

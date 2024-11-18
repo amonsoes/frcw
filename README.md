@@ -28,7 +28,7 @@ Download and install torch + torchvision [here](https://pytorch.org/)
 
 Install remaining modules:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
@@ -55,11 +55,11 @@ Put the downloaded folder in the folder './saves/'.
 
 You can use these commands. Replace path/to/package with the path to your package.
 
-```
+```bash
 cp package_extensions/IQA_pytorch/MAD.py path/to/IQA_pytorch
 ```
 
-```
+```bash
 cp package_extensions/DISTS_pytorch/DISTS_pt.py path/to/DISTS_pytorch
 ```
 
@@ -69,10 +69,10 @@ cp package_extensions/DISTS_pytorch/DISTS_pt.py path/to/DISTS_pytorch
 
 Available attacks:
 
-FastRCW: Reliable attack based on a JPEG approximation and Adaptive Compression Search
-JPEG Iterative FGSM [Shin et al. 17](https://machine-learning-and-security.github.io/papers/mlsec17_paper_54.pdf)
-JPEG Iterative FGSM [Reich et al. 24](https://arxiv.org/abs/2309.06978)
-Fast Adversarial Rounding [Shi et al. 21](https://ieeexplore.ieee.org/document/9428243)
+- FastRCW: Reliable attack based on a JPEG approximation and Adaptive Compression Search
+- JPEG Iterative FGSM [Shin et al. 17](https://machine-learning-and-security.github.io/papers/mlsec17_paper_54.pdf)
+- JPEG Iterative FGSM [Reich et al. 24](https://arxiv.org/abs/2309.06978)
+- Fast Adversarial Rounding [Shi et al. 21](https://ieeexplore.ieee.org/document/9428243)
 
 
 ### (2) ASP comparison with the SOTA
@@ -85,6 +85,13 @@ This measures the ASP over a set of appropriate Epsilon values. NOTE: Optimizati
 - JPEG IFGSM (Shin et al.): jifgsm
 - JPEG IFGSM (Reich et al.): jifgsm (put --diff_jpeg_type=reich)
 - Fast Adversarial Rounding (Shi et al.): far
+
+To check for ASR and CAD, find the log of your run in ./saves/reports/imgnet_classification after your run, 
+copy the name of your log directoy (looks like YYYY-DD-MM_ImgNetCNN_model_attack_setting) and run the following command:
+
+```bash
+python3 cad_asr.py your_log_dir
+```
 
 #### White-Box Attacks
 
