@@ -53,7 +53,7 @@ Put the downloaded folder in the folder './saves/'.
 - Replace MAD.py in your IQA_pytorch package with the one in the folder package_extensions.
 - Replace DISTS_pt.py in your DISTS_pytorch package with the one in the folder package_extensions.
 
-You can youse these commands. Replace path/to/package with the path to your package
+You can use these commands. Replace path/to/package with the path to your package.
 
 ```
 cp package_extensions/IQA_pytorch/MAD.py path/to/IQA_pytorch
