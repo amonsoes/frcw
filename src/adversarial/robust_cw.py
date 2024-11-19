@@ -116,7 +116,7 @@ class RCW(CW):
         compressed_img = self.compress_for_q_search(ref_image, jpeg_quality=q.squeeze(0))
         last_l2 = (compressed_img - cqe_image).pow(2).sum(dim=(1,2,3)).sqrt()
         
-        while torch.any(current_l2 > acceptance_threshold):
+        while torch.any(best_l2 > acceptance_threshold):
             steps = torch.clamp(step_size, min=1.).int()
             steps[lower_than_acceptance_mask] = step_size[lower_than_acceptance_mask]
             q += direction * torch.round((schedule * steps)).int()
@@ -127,15 +127,16 @@ class RCW(CW):
             # parallelize exploration steps logic
             is_worse_mask = (current_l2 >= last_l2).unsqueeze(0)
             exploration_steps[is_worse_mask] += 1
+            break_criterion[is_worse_mask] += 1
             chg_dir_mask = exploration_steps > 2
             direction[chg_dir_mask] *= -1
             exploration_steps[chg_dir_mask] = 0
 
-            # parallelize criterion logic
+            # parallelize better d logic
             is_better_mask = ~is_worse_mask
             break_criterion[is_better_mask] = 0
 
-            #parallelize best_q logic
+            #parallelize best_d logic
             is_best_mask = (current_l2 < best_l2)
             best_q[is_best_mask] = q[is_best_mask]
             best_l2[is_best_mask] = current_l2[is_best_mask.squeeze(0)]
@@ -152,7 +153,6 @@ class RCW(CW):
             if torch.all(break_criterion >= 10) or n_steps.max() >=150:
                 # best q has not changed for 10 iterations
                 break
-            break_criterion += 1
             print(f'step : {n_steps}, q : {q}, current_l2 : {current_l2}, best q : {best_q}\n')
         print(f'BEST q FOUND: {best_q}')
         n_steps = n_steps.sum().item()
