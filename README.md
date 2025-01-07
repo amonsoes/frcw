@@ -1,4 +1,4 @@
-# FastRCW
+# RCW
 
 This repository holds the code for the paper "Towards JPEG-compression invariance for adversarial optimization". It contains commands to replicate all experiments.
 
@@ -69,7 +69,7 @@ cp package_extensions/DISTS_pytorch/DISTS_pt.py path/to/DISTS_pytorch
 
 Available attacks:
 
-- FastRCW: Reliable attack based on a JPEG approximation and Adaptive Compression Search
+- RCW: Reliable attack based on a JPEG approximation and Adaptive Compression Search
 - JPEG Iterative FGSM [Shin et al. 17](https://machine-learning-and-security.github.io/papers/mlsec17_paper_54.pdf)
 - JPEG Iterative FGSM [Reich et al. 24](https://arxiv.org/abs/2309.06978)
 - Fast Adversarial Rounding [Shi et al. 21](https://ieeexplore.ieee.org/document/9428243)
@@ -81,7 +81,7 @@ ATTACKS:
 
 This measures the success rate ASR and the average distortion CAD. To change the attack in the run command (see below), change the argument --spatial_adv_type to one of the following values:
 
-- FastRCW: rcw
+- RCW: rcw
 - JPEG IFGSM (Shin et al.): jifgsm
 - JPEG IFGSM (Reich et al.): jifgsm (put --diff_jpeg_type=reich)
 - Fast Adversarial Rounding (Shi et al.): far
@@ -97,7 +97,7 @@ This will output the ASR and CAD of the run.
 
 #### White-Box Attacks
 
-FastRCW:
+RCW:
 ```bash
 python3 run_pretrained.py --dataset nips17 --model_name resnet --transform pretrained --adversarial True --steps 10000 --spatial_adv_type rcw  --target_mode most_likely --surrogate_model resnet --surrogate_input_size 224 --batchsize 16 --device cuda:0 --is_targeted True  --attack_compression=True --attack_compression_rate 80 --attack_lr 0.00001 --c 0.5
 ```
@@ -121,7 +121,7 @@ python3 run_pretrained.py --dataset nips17 --model_name resnet --transform pretr
 
 #### Black-Box Attacks
 
-FastRCW:
+RCW:
 ```bash
 python3 run_pretrained.py --dataset nips17 --model_name inception --transform pretrained --adversarial True --steps 10000 --spatial_adv_type rcw  --target_mode most_likely --surrogate_model resnet --surrogate_input_size 224 --batchsize 16 --device cuda:0 --is_targeted True  --attack_compression=True --attack_compression_rate 70 --attack_lr 0.00001 --c 0.5
 ```
@@ -145,7 +145,7 @@ python3 run_pretrained.py --dataset nips17 --model_name inception --transform pr
 
 *PGD-Adversarially-Trained Resnet*
 
-FastRCW:
+RCW:
 ```bash
 python3 run_pretrained.py --dataset nips17 --model_name adv-resnet-pgd --transform pretrained --adversarial True --steps 10000 --spatial_adv_type rcw  --target_mode most_likely --surrogate_model adv-resnet-pgd --surrogate_input_size 224 --batchsize 16 --device cuda:0 --is_targeted True  --attack_compression=True --attack_compression_rate 70 --attack_lr 0.00001 --c 0.5 --adversarial_pretrained=True --adv_pretrained_protocol=pgd
 ```
@@ -168,7 +168,7 @@ python3 run_pretrained.py --dataset nips17 --model_name adv-resnet-pgd --transfo
 *FBF-Adversarially-Trained Resnet*
 
 
-FastRCW:
+RCW:
 ```bash
 python3 run_pretrained.py --dataset nips17 --model_name adv-resnet-pgd --transform pretrained --adversarial True --steps 10000 --spatial_adv_type rcw  --target_mode most_likely --surrogate_model adv-resnet-pgd --surrogate_input_size 224 --batchsize 16 --device cuda:1 --is_targeted True  --attack_compression=True --attack_compression_rate 70 --attack_lr 0.00001 --c 0.5 --adversarial_pretrained=True --adv_pretrained_protocol=pgd
 ```
