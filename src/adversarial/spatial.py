@@ -164,9 +164,6 @@ class WhiteBoxAttack:
         else:
             protocol_file = kwargs['protocol_file']
         self.image_metric = ImageQualityMetric(['mad', 'ssim', 'dists'], protocol_file)
-        self.save_dir = f"./data/survey_data/{attack_type.split('_')[0]}/vanilla" if len(attack_type.split('_')) == 1 else f"./data/survey_data/{attack_type.split('_')[1]}/hpf"
-        self.check_save_dir_path()
-        self.orig_save_dir = "./data/survey_data/orig"
         self.l2_norm = []
         self.mad_score = []
         self.ssim_score = []
