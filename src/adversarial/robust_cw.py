@@ -2,6 +2,7 @@ import torch
 import csv
 import torch.optim as optim
 import matplotlib.pyplot as plt
+import time
 
 from diff_jpeg import diff_jpeg_coding
 from src.adversarial.custom_cw import CW
@@ -214,7 +215,6 @@ class RCW(CW):
         
     def get_ro_loss(self, adv_images, labels, target_labels):
     
-        #random_quality = random.randint(self.compression_lower_bound, 99)
         compressed_img = self.compress(adv_images, jpeg_quality=self.determined_quality.to(self.device))
         
         #outputs = self.get_outputs(adv_images)
@@ -232,6 +232,7 @@ class RCW(CW):
         r"""
         Overridden.
         """
+        start_time = time.perf_counter()
         print(f'\nCalculating adversarial example for images...\n\n')
         #images = images / 255
         
@@ -331,7 +332,224 @@ class RCW(CW):
                 best_adv_images = mask*adv_images.detach() + (1-mask)*best_adv_images
                 # either the current adv_images is the new best_adv_images or the old one depending on mask
                 
-                print(f'\n{step} - iq_loss: {iq_loss.item()}, r_loss: {ro_loss.sum().item()} cost: {cost.item()}')  
+                print(f'\n{step} - iq_loss: {iq_loss.item()}, r_loss: {ro_loss.sum().item()} cost: {cost.item()}')
+                end_time = time.perf_counter()
+                elapsed_time = (end_time - start_time) / batch_size
+                self.loop_times.append(elapsed_time)
+                start_time = time.perf_counter()
+
+            # set the best output of run as best adv if (1) an adv was found (2) the cost is lower than the one from the last starts
+            # compute any per batch image. igs could only be different if one output was adv during optim
+            r = torch.any((best_adv_images != images), dim=1)
+            r = torch.any(r, dim=1)
+            adv_found_in_run = torch.any(r, dim=1)
+            
+            is_lower_than_all_starts = (best_iq_from_starts > best_iq).float()
+            mask = adv_found_in_run * is_lower_than_all_starts
+            best_iq_from_starts = mask*best_iq + (1-mask)*best_iq_from_starts
+            mask = mask.view([-1]+[1]*(dim-1))
+            best_adv_images_from_starts = mask*best_adv_images + (1-mask)*best_adv_images_from_starts
+
+            # adjust the constant as needed
+            adv_found = adv_found_in_run
+            upper_bound[adv_found] = torch.min(upper_bound[adv_found], CONST[adv_found])
+            adv_not_found = ~adv_found
+            lower_bound[adv_not_found] = torch.max(lower_bound[adv_not_found], CONST[adv_not_found])
+            is_smaller = upper_bound < 1e9
+            CONST[is_smaller] = (lower_bound[is_smaller] + upper_bound[is_smaller]) / 2
+            CONST[(~is_smaller) * adv_not_found] *= 10
+            self.c = CONST
+        
+        if self.protocol_file:
+            self.write_to_protocol_dir(iq_loss, ro_loss, cost)
+            self.write_runtime_to_protocol_dir()
+        self.write_timing('cqe', self.n)
+        return (best_adv_images_from_starts, target_labels)
+
+
+
+
+
+class EnsembleRCW(CW):
+
+    def __init__(self, 
+                model, 
+                model_trms, 
+                N,
+                *args, 
+                **kwargs):
+        """Robust CW employs a differentiable approximation
+        in the constrained optimization in the form of T
+        to improve the robustness in compression scenarios.
+        
+        ||x - x_hat||_2 + b * f(JPEG(x_hat, q), theta)
+        
+        jpeg_quality argument should be in range [0,1]
+        they will be internally projected to 255
+        and after compression back to 1.0
+        
+        self.compress(x) should be applied directly on image 
+        CQE(Compression Quality Estimation) is a binary search algorithm
+        to find the quality setting of a JPEG algorithm
+        
+        """
+        
+        super().__init__(model, model_trms, *args, **kwargs)
+        self.n = 0
+        self.compression_rates = []
+        compression = 99
+        self.N_comp_rates = N
+        for i in range(N): # in 5-step decrements
+            self.compression_rates.append(compression)
+            compression -= 5
+        
+
+    def ensemble_grad(self, w, labels, target_labels, iq_loss):
+
+        ensemble_grad = torch.zeros_like(w).detach().to(self.device)    
+        grad_list = []
+        loss_tensor = torch.zeros(self.N_comp_rates)
+        
+        for e, compression_rate in enumerate(self.compression_rates):
+            w_i = w.clone().detach()
+            w_i.requires_grad = True
+            adv_images_i = self.tanh_space(w_i)
+            ro_loss, comp_outs = self.get_ro_loss(adv_images_i, labels, target_labels, q=torch.full((w.shape[0],), compression_rate, dtype=torch.uint8))
+            if e == len(self.compression_rates) // 2:
+                comp_outs_mean = comp_outs
+
+            cost = (ro_loss + iq_loss).sum()
+            # Update adversarial images
+            grad = torch.autograd.grad(cost, w_i,
+                                    retain_graph=False,
+                                    create_graph=False)[0]
+            
+            grad_list.append(grad)
+            loss_tensor[e] = cost
+        
+        total_cost_exp = loss_tensor.exp().sum()
+        for cost, grad in zip(loss_tensor, grad_list):
+            ensemble_grad +=  (1 - (torch.exp(cost)) / total_cost_exp) * grad
+        return ensemble_grad, comp_outs_mean, loss_tensor.mean()
+                
+        
+    def compress(self, img, jpeg_quality):
+        img = img * 255
+        compressed =  diff_jpeg_coding(image_rgb=img, jpeg_quality=jpeg_quality)
+        return (compressed / 255).clip(min=0., max=1.)
+
+    def get_l2_loss(self, adv_images, images, attack_mask):
+        current_iq_loss = (adv_images - images).pow(2).sum(dim=(1,2,3)).sqrt()
+        iq_loss = current_iq_loss.sum()
+        return iq_loss, current_iq_loss
+    
+        
+    def get_ro_loss(self, adv_images, labels, target_labels, q):
+    
+        compressed_img = self.compress(adv_images, jpeg_quality=q.to(self.device))
+        
+        compressed_outputs = self.get_outputs(compressed_img) 
+        
+        if self.targeted:
+            f_compressed = self.f(compressed_outputs, target_labels)
+            f_compressed *= self.c
+        else:
+            f_compressed = self.f(compressed_outputs, labels).sum()
+            f_compressed *= self.c
+        return f_compressed, compressed_outputs
+
+    def forward(self, images, labels):
+        r"""
+        Overridden.
+        """
+        print(f'\nCalculating adversarial example for images...\n\n')
+        #images = images / 255
+        
+        self.c = self.original_c
+        images = images.clone().detach().to(self.device)
+        labels = labels.clone().detach().to(self.device)
+        
+
+        self.n += images.shape[0]
+
+        if self.targeted:
+            target_labels = self.get_target_label(images, labels)
+
+    
+        attack_mask = 1 # multiplication results in identity
+
+        # implement outer step like in perccw
+
+        # set the lower and upper bounds accordingly
+        batch_size = images.shape[0]
+        lower_bound = torch.zeros(batch_size, device=self.device)
+        CONST = torch.full((batch_size,), self.c_value, device=self.device)
+        upper_bound = torch.full((batch_size,), 1e10, device=self.device)
+        self.batch_size = batch_size
+        
+        # set markers for inter-c-run comparison
+        best_adv_images_from_starts = images.clone().detach()
+        best_iq_from_starts = torch.full_like(CONST, 1e10)
+        adv_found = torch.zeros_like(CONST)
+        
+        for outer_step in range(self.n_samples):    
+            # search to get optimal c
+            start_time = time.perf_counter() 
+            print(f'step in binary search for constant c NR:{outer_step}, c:{self.c}\n')
+        
+            # w = torch.zeros_like(images).detach() # Requires 2x times    
+            w = self.inverse_tanh_space(images).detach()
+            w.requires_grad = True
+
+            best_adv_images = images.clone().detach()
+            best_iq = 1e10*torch.ones((len(images))).to(self.device)
+            best_cost = 1e10*torch.ones((len(images))).to(self.device)
+            dim = len(images.shape)
+
+            self.optimizer = optim.Adam([w], lr=self.lr)
+            self.optimizer.zero_grad()
+
+            for step in range(self.steps):
+                    
+                # Get adversarial images
+                adv_images = self.tanh_space(w)
+
+                # Calculate image quality loss
+                iq_loss, current_iq_loss = self.get_iq_loss(adv_images, images, attack_mask)
+
+
+                # Calculate adversarial loss including robustness loss and get grad
+                w.grad, comp_outputs, cost = self.ensemble_grad(adv_images, labels, target_labels, iq_loss)
+
+                
+                # Update adversarial images
+                self.optimizer.step()
+
+                # filter out images that get either correct predictions or non-decreasing loss, 
+                # i.e., only images that are not target and loss-decreasing are left 
+
+                # check if adv_images were classified incorrectly
+                _, pre = torch.max(comp_outputs.detach(), 1)
+                is_adversarial = (pre == target_labels).float()  
+                
+                # check if the overall los          
+                has_lower_iq_loss  = best_iq > current_iq_loss.detach()
+                
+                # filter to only change images where both if True
+                mask =  is_adversarial * has_lower_iq_loss
+
+                best_cost = mask*cost.detach() + (1-mask)*best_cost
+                best_iq = mask*current_iq_loss.detach() + (1-mask)*best_iq
+                
+                mask = mask.view([-1]+[1]*(dim-1))
+                best_adv_images = mask*adv_images.detach() + (1-mask)*best_adv_images
+                # either the current adv_images is the new best_adv_images or the old one depending on mask
+                
+                print(f'\n{step} - iq_loss: {iq_loss.item()}, cost: {cost.sum().item()}') 
+                end_time = time.perf_counter()
+                elapsed_time = (end_time - start_time) / batch_size
+                self.loop_times.append(elapsed_time)
+                start_time = time.perf_counter() 
 
             # set the best output of run as best adv if (1) an adv was found (2) the cost is lower than the one from the last starts
             # compute any per batch image. igs could only be different if one output was adv during optim
@@ -357,6 +575,8 @@ class RCW(CW):
         
 
         if self.protocol_file:
-            self.write_to_protocol_dir(iq_loss, ro_loss, cost)
+            self.write_to_protocol_dir(iq_loss, cost, cost)
             self.write_runtime_to_protocol_dir()
+        
+        self.write_timing('ensemble', self.n)
         return (best_adv_images_from_starts, target_labels)

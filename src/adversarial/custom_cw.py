@@ -91,6 +91,7 @@ class CW(Attack):
         self.forward_fn = self.forward_verbose if verbose_cw else self.forward_regular
         self.set_target_mode(target_mode)
         self.eps = eps # this is needed for a maximum perturbation estimation
+        self.loop_times = []
     
     def set_target_mode(self, mode):
         if mode == 'least_likely':
@@ -238,7 +239,15 @@ class CW(Attack):
         if self.protocol_file:
             self.write_to_protocol_dir(iq_loss, f_loss, cost)
             self.write_runtime_to_protocol_dir()
+        
+        self.write_timing()
         return (best_adv_images, target_labels)
+
+    def write_timing(self, technique, iter):
+        with open(f'./timing/timing_{technique}_{iter}.csv', 'w') as f:
+            csv_obj = csv.writer(f)
+            for e, time in enumerate(self.loop_times):
+                csv_obj.writerow([e, time])
     
     def get_adversarial_loss(self, adv_images, labels, target_labels):
         outputs = self.get_outputs(adv_images)

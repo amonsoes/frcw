@@ -186,6 +186,7 @@ def adversarial_setup(args, filename):
                                                         'vifcw',
                                                         'msssimcw',
                                                         'rcw',
+                                                        'ensemblercw',
                                                         'wrcw',
                                                         'ycw',
                                                         'varrcw',
@@ -204,7 +205,8 @@ def adversarial_setup(args, filename):
                                                     'ercw', 
                                                     'cvfgsm', 
                                                     'jifgsm',
-                                                    'uvmifgsm']:
+                                                    'uvmifgsm',
+                                                    'ensemblercw']:
                 spatial_attack_params.N = args.N
                 spatial_attack_params.steps = args.steps
             if adversarial_opt.spatial_adv_type == 'jifgsm':
@@ -231,6 +233,7 @@ def adversarial_setup(args, filename):
                                                     'vifcw',
                                                     'msssimcw',
                                                     'rcw',
+                                                    'ensemblercw',
                                                     'wrcw',
                                                     'ycw',
                                                     'varrcw',

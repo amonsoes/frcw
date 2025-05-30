@@ -8,7 +8,7 @@ from src.model.pretrained import CNNLoader
 from src.adversarial.hpf_mask import HPFMasker
 from src.adversarial.iqm import ImageQualityMetric
 from src.adversarial.custom_cw import CW
-from src.adversarial.robust_cw import RCW
+from src.adversarial.robust_cw import RCW, EnsembleRCW
 from src.adversarial.jpeg_ifgm import JIFGSM
 from src.adversarial.adversarial_rounding import FastAdversarialRounding
 from src.adversarial.fgsm import FGSM
@@ -78,6 +78,7 @@ class AttackLoader:
                            'vifcw',
                            'msssimcw',
                            'rcw',
+                           'ensemblercw',
                            'wrcw',
                            'ycw',
                            'varrcw',
@@ -290,6 +291,8 @@ class WhiteBoxAttack:
             attack = FastAdversarialRounding(model, surrogate_loss=surrogate_loss, model_trms=self.model_trms, img_size=self.input_size, *args, **kwargs)
         elif attack_type == 'cw':
             attack = CW(model, model_trms=self.model_trms, *args, **kwargs)
+        elif attack_type == 'ensemblercw':
+            attack = EnsembleRCW(model, model_trms=self.model_trms, *args, **kwargs)
         elif attack_type == 'rcw':
             if self.dataset_type == 'nips17':
                 cqe_init = 'random'
