@@ -404,16 +404,18 @@ class EnsembleRCW(CW):
             compression -= 5
         
 
-    def ensemble_grad(self, w, labels, target_labels, iq_loss):
+    def ensemble_grad(self, w, labels, target_labels, ori_images):
 
         ensemble_grad = torch.zeros_like(w).detach().to(self.device)    
         grad_list = []
         loss_tensor = torch.zeros(self.N_comp_rates)
+        ro_loss_tensor = torch.zeros(self.N_comp_rates)
         
         for e, compression_rate in enumerate(self.compression_rates):
             w_i = w.clone().detach()
             w_i.requires_grad = True
             adv_images_i = self.tanh_space(w_i)
+            iq_loss, current_iq_loss = self.get_iq_loss(adv_images_i, ori_images)
             ro_loss, comp_outs = self.get_ro_loss(adv_images_i, labels, target_labels, q=torch.full((w.shape[0],), compression_rate, dtype=torch.uint8))
             if e == len(self.compression_rates) // 2:
                 comp_outs_mean = comp_outs
@@ -426,11 +428,12 @@ class EnsembleRCW(CW):
             
             grad_list.append(grad)
             loss_tensor[e] = cost
+            ro_loss_tensor[e] = ro_loss.mean()
         
         total_cost_exp = loss_tensor.exp().sum()
         for cost, grad in zip(loss_tensor, grad_list):
             ensemble_grad +=  (1 - (torch.exp(cost)) / total_cost_exp) * grad
-        return ensemble_grad, comp_outs_mean, loss_tensor.mean()
+        return ensemble_grad, comp_outs_mean, loss_tensor.mean(), ro_loss_tensor.mean(), current_iq_loss, adv_images_i, iq_loss
                 
         
     def compress(self, img, jpeg_quality):
@@ -438,7 +441,7 @@ class EnsembleRCW(CW):
         compressed =  diff_jpeg_coding(image_rgb=img, jpeg_quality=jpeg_quality)
         return (compressed / 255).clip(min=0., max=1.)
 
-    def get_l2_loss(self, adv_images, images, attack_mask):
+    def get_l2_loss(self, adv_images, images, attack_mask=None):
         current_iq_loss = (adv_images - images).pow(2).sum(dim=(1,2,3)).sqrt()
         iq_loss = current_iq_loss.sum()
         return iq_loss, current_iq_loss
@@ -510,16 +513,10 @@ class EnsembleRCW(CW):
             self.optimizer.zero_grad()
 
             for step in range(self.steps):
-                    
-                # Get adversarial images
-                adv_images = self.tanh_space(w)
-
-                # Calculate image quality loss
-                iq_loss, current_iq_loss = self.get_iq_loss(adv_images, images, attack_mask)
 
 
                 # Calculate adversarial loss including robustness loss and get grad
-                w.grad, comp_outputs, cost = self.ensemble_grad(adv_images, labels, target_labels, iq_loss)
+                w.grad, comp_outputs, cost, ro_loss, current_iq_loss, adv_images, iq_loss = self.ensemble_grad(w, labels, target_labels, images)
 
                 
                 # Update adversarial images
@@ -545,7 +542,7 @@ class EnsembleRCW(CW):
                 best_adv_images = mask*adv_images.detach() + (1-mask)*best_adv_images
                 # either the current adv_images is the new best_adv_images or the old one depending on mask
                 
-                print(f'\n{step} - iq_loss: {iq_loss.item()}, cost: {cost.sum().item()}') 
+                print(f'\n{step} - iq_loss: {iq_loss.item()}, ro_loss: {ro_loss.sum().item()}, cost: {cost.sum().item()}') 
                 end_time = time.perf_counter()
                 elapsed_time = (end_time - start_time) / batch_size
                 self.loop_times.append(elapsed_time)

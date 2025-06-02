@@ -10,18 +10,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import csv
-import random
-
-from kornia.color import ycbcr_to_rgb, rgb_to_ycbcr
-from IQA_pytorch import SSIM, MAD
-from DISTS_pytorch import DISTS
-from torchmetrics.image import VisualInformationFidelity as VIF
-from torchmetrics.image import MultiScaleStructuralSimilarityIndexMeasure as MSSSIM
-from diff_jpeg import diff_jpeg_coding
-from torchvision import transforms as T
 
 from src.adversarial.attack_base import Attack
-from src.adversarial.iqm import PSNR, HPFL2
 
 
 
@@ -281,7 +271,7 @@ class CW(Attack):
             runtimes_obj.writerow([self.ca_runtime])
     
     # this should be overwritten by subclass custom CW
-    def get_iq_loss(self, adv_images, images, attack_mask):
+    def get_iq_loss(self, adv_images, images, attack_mask=None):
         current_iq_loss = self.loss(self.flatten(adv_images), self.flatten(images)).sum(dim=1)
         iq_loss = current_iq_loss.sum()
         return iq_loss, current_iq_loss

@@ -23,9 +23,6 @@ def plot_timing(cqe_csv, ens_csv):
     
     x_axis = list(range(0, len(y_ens_list)))
 
-    print(sum(y_cqe_list)/len(y_cqe_list))
-    print(sum(y_ens_list)/len(y_ens_list))
-
     plt.plot(x_axis, y_ens_list, color='red', linestyle='dashed', label='Ensemble')
     plt.plot(x_axis, y_cqe_list, color='blue', linestyle='solid', label='RCW')
     plt.title("Time per iteration ")
