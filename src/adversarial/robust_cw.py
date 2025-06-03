@@ -420,7 +420,7 @@ class EnsembleRCW(CW):
             if e == len(self.compression_rates) // 2:
                 comp_outs_mean = comp_outs
 
-            cost = (ro_loss + iq_loss).sum()
+            cost = (ro_loss + iq_loss).mean()
             # Update adversarial images
             grad = torch.autograd.grad(cost, w_i,
                                     retain_graph=False,
