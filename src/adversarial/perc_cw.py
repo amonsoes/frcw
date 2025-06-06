@@ -324,6 +324,7 @@ class PerC_AL(Attack):
              #for relatively easy untargeted case, alpha_c_init is adjusted to a smaller value (e.g., 0.1 is used in the paper) 
              alpha_c: float = 0.1,
              kappa: float = 0.,
+             target_mode='random',
              *args,
              **kwargs
                 ) -> None:
@@ -334,7 +335,18 @@ class PerC_AL(Attack):
         self.kappa = kappa
         self.original_kappa = kappa
         self.batch_size = batch_size
-        self.loss = nn.CrossEntropyLoss(reduction='sum')
+        self.loss = nn.CrossEntropyLoss(reduction='mean')
+        self.supported_mode = ['default', 'targeted']
+        self.set_target_mode(target_mode)
+
+    def set_target_mode(self, mode):
+        if mode == 'least_likely':
+            self.set_mode_targeted_least_likely()
+        elif mode == 'most_likely':
+            self.set_mode_targeted_most_likely()
+        else:
+            print('WARNING: set_target_mode was set to random. If unwanted, change "target_mode" arg to either "least_likely" or "most_likely".')
+            self.set_mode_targeted_random()
         
 
     def forward(self, inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
@@ -397,7 +409,7 @@ class PerC_AL(Attack):
             # compute CIEDE2000 difference and get fidelity gradients, scale, update delta by color gradient
             d_map=ciede2000_diff(inputs_LAB,rgb2lab_diff(inputs+delta,self.device),self.device).unsqueeze(1)
             color_dis=torch.norm(d_map.view(batch_size,-1),dim=1)
-            color_loss=color_dis.sum()
+            color_loss=color_dis.mean()
             color_loss
             color_loss.backward()
             grad_color=delta.grad.clone()
@@ -414,7 +426,7 @@ class PerC_AL(Attack):
             mask=mask_best * mask_isadv
             color_l2_delta_bound_best[mask]=color_dis.data[mask]
             X_adv_round_best[mask]=X_adv_round[mask]
-            print(f'adv_loss:{loss}, color_loss:{color_loss}')
+            print(f'adv_loss:{loss}, color_loss:{color_loss}, is_adv:{mask_isadv}')
 
         return X_adv_round_best
     
@@ -439,20 +451,6 @@ class PerC_AL(Attack):
             return is_adv
 
     
-    def get_iq_range_from_l2_bound(self, l2_bound):
-        if l2_bound <= 4.0:
-            low, high = 0.0, 4.0
-        elif l2_bound <= 8.0:
-            low, high = 4.0, 8.0
-        elif l2_bound <= 15.0:
-            low, high = 8.0, 15.0
-        elif l2_bound <= 23.0:
-            low, high = 15.0, 23.0
-        elif l2_bound <= 38.0:
-            low, high = 23.0, 38.0
-        else:
-            low, high = 38.0, 134.0
-        return low, high
 
     def get_l2_loss(self, adv_images, images, attack_mask):
         current_iq_loss = (adv_images - images).pow(2).sum(dim=(1,2,3)).sqrt()
@@ -460,260 +458,3 @@ class PerC_AL(Attack):
         current_iq_loss = torch.clamp(current_iq_loss - self.l2_bound, min=0)
         iq_loss = current_iq_loss.sum()
         return iq_loss, current_iq_loss, real_losses
-
-class PerC_CW:
-    """
-	PerC_CW: C&W with a new substitute penaly term concerning perceptual color differences.
-    Modified from https://github.com/jeromerony/fast_adversarial/blob/master/fast_adv/adversarys/carlini.py
-
-    Parameters
-    ----------
-    image_constraints : tuple
-        Bounds of the images.
-    num_classes : int
-        Number of classes of the model to adversary.
-    kappa : float, optional
-        kappa of the adversary for Carlini's loss, in term of distance between logits.
-    attack_lr : float
-        Learning rate for the optimization.
-    n_starts : int
-        Number of search steps to find the best scale constant for Carlini's loss.
-    steps : int
-        Maximum number of iterations during a single search step.
-    c : float
-        constant of the adversary.
-    device : torch.device, optional
-        Device to use for the adversary.
-    """
-
-    def __init__(self,
-                 model: torch.nn.Module,
-                 model_trms: torchvision.transforms.Compose,
-                 image_constraints: Tuple[float, float] = [0,1],
-                 num_classes: int = 1000,
-                 kappa: float = 0,
-                 attack_lr: float = 0.01,
-                 n_starts: int = 1,
-                 steps: int = 1000,
-                 abort_early: bool = False,
-                 c: float = 10,
-                 target_mode: str = 'most_likely',
-                 verbose_cw: bool = False,
-                 write_protocol: bool = True,
-                 protocol_file: str = './results.txt',
-                 eps: float = 0.08
-                ) -> None:
-        self.model = model
-        self.model_trms = model_trms
-        self.kappa = kappa
-        self.attack_lr = attack_lr
-        self.n_starts = n_starts
-        self.steps = steps
-        self.abort_early = abort_early
-        self.c = c
-        self.num_classes = num_classes
-        self.repeat = self.n_starts >= 10
-        self.boxmin = image_constraints[0]
-        self.boxmax = image_constraints[1]
-        self.boxmul = (self.boxmax - self.boxmin) / 2
-        self.boxplus = (self.boxmin + self.boxmax) / 2
-        self.set_target_mode(target_mode)
-        self.protocol_file = protocol_file
-        self.write_protocol = write_protocol
-        self.device = next(model.parameters()).device
-        self.self.targeted = True
-
-    @staticmethod
-    def _arctanh(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
-        x *= (1. - eps)
-        return (torch.log((1 + x) / (1 - x))) * 0.5
-
-    def _step(self,step_n, model: nn.Module, optimizer: optim.Optimizer, inputs: torch.Tensor, tinputs: torch.Tensor,
-              modifier: torch.Tensor, labels: torch.Tensor, labels_infhot: torch.Tensor, targeted: bool,
-              const: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-
-        batch_size = inputs.shape[0]
-        adv_input = torch.tanh(tinputs + modifier) * self.boxmul + self.boxplus
-        # calculate the global perceptual color differences (L2 norm of the color distance map)
-        l2 = torch.norm(ciede2000_diff(rgb2lab_diff(inputs,self.device),rgb2lab_diff(adv_input,self.device),self.device).view(batch_size, -1),dim=1)
-        logits = model(self.model_trms(adv_input))
-
-        # confusing naming but 'real' refers to the target_labels if self.targeted == True
-        real = logits.gather(1, labels.unsqueeze(1)).squeeze(1)
-        other = (logits - labels_infhot).max(1)[0]
-        if self.targeted:
-            # if self.targeted, optimize for making the other class most likely
-            logit_dists = torch.clamp(other - real + self.kappa, min=0)
-        else:
-            # if non-self.targeted, optimize for making this class least likely.
-            logit_dists = torch.clamp(real - other + self.kappa, min=0)
-
-        logit_loss = (const * logit_dists).sum()
-        l2_loss = l2.sum()
-        loss = logit_loss + l2_loss
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        print(f'\n{step_n} - iq_loss: {l2_loss.item()}, f_loss: {logit_dists.item()} cost: {loss.item()}')
-
-        return adv_input.detach(), logits.detach(), l2.detach(), logit_dists.detach(), loss.detach()
-
-    def __call__(self, inputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        """
-        Performs the adversary of the model given the inputs and labels.
-
-        Parameters
-        ----------
-        inputs : torch.Tensor
-            Batch of image examples.
-        labels : torch.Tensor
-            Original labels
-
-        Returns
-        -------
-        torch.Tensor
-            Batch of image samples modified to be adversarial
-        """
-        
-        inputs = inputs.to(self.device)
-        labels = labels.to(self.device)
-        batch_size = inputs.shape[0]
-        tinputs = self._arctanh((inputs - self.boxplus) / self.boxmul)
-
-        # set the lower and upper bounds accordingly
-        lower_bound = torch.zeros(batch_size, device=self.device)
-        CONST = torch.full((batch_size,), self.c, device=self.device)
-        upper_bound = torch.full((batch_size,), 1e10, device=self.device)
-
-        o_best_l2 = torch.full((batch_size,), 1e10, device=self.device)
-        o_best_score = torch.full((batch_size,), -1, dtype=torch.long, device=self.device)
-        o_best_adversary = inputs.clone()
-
-        target_label = self.get_target(inputs, labels)
-        
-        # setup the target variable, we need it to be in one-hot form for the loss function
-        labels_onehot = torch.zeros(target_label.size(0), self.num_classes, device=self.device)
-        labels_onehot.scatter_(1, target_label.unsqueeze(1), 1)
-        labels_infhot = torch.zeros_like(labels_onehot).scatter_(1, target_label.unsqueeze(1), float('inf'))
-
-        for outer_step in range(self.n_starts):
-            
-
-            # setup the modifier variable, this is the variable we are optimizing over
-            modifier = torch.zeros_like(inputs, requires_grad=True)
-
-            # setup the optimizer
-            optimizer = optim.Adam([modifier], lr=self.attack_lr)
-            best_l2 = torch.full((batch_size,), 1e10, device=self.device)
-            best_score = torch.full((batch_size,), -1, dtype=torch.long, device=self.device)
-
-            # The last iteration (if we run many steps) repeat the search once.
-            """if self.repeat and outer_step == (self.n_starts - 1):
-                CONST = upper_bound"""
-
-            prev = float('inf')
-            for iteration in range(self.steps):
-                # perform the adversary
-                adv, logits, l2, logit_dists, loss = self._step(iteration, self.model, optimizer, inputs, tinputs, modifier,
-                                                                target_label, labels_infhot, self.self.targeted, CONST)
-
-                # check if we should abort search if we're getting nowhere.
-                if self.abort_early and iteration % (self.steps // 10) == 0:
-                    if logit_dists > prev:
-                        break
-                    prev = logit_dists
-
-                # adjust the best result found so far
-                predicted_classes = (self.model(self.model_trms(adv)) - labels_onehot * self.kappa).argmax(1) if self.self.targeted else \
-                    (self.model(self.model_trms(adv)) + labels_onehot * self.kappa).argmax(1)
-
-                is_adv = (predicted_classes == target_label) if self.self.targeted else (predicted_classes != labels)
-                is_smaller = l2 < best_l2
-                o_is_smaller = l2 < o_best_l2
-                is_both = is_adv * is_smaller
-                o_is_both = is_adv * o_is_smaller
-                
-
-                best_l2[is_both] = l2[is_both]
-                best_score[is_both] = predicted_classes[is_both]
-                o_best_l2[o_is_both] = l2[o_is_both]
-                o_best_score[o_is_both] = predicted_classes[o_is_both]
-                o_best_adversary[o_is_both] = adv[o_is_both]
-                
-            # adjust the constant as needed
-            adv_found = (best_score == target_label) if self.self.targeted else ((best_score != labels) * (best_score != -1))
-            upper_bound[adv_found] = torch.min(upper_bound[adv_found], CONST[adv_found])
-            adv_not_found = ~adv_found
-            lower_bound[adv_not_found] = torch.max(lower_bound[adv_not_found], CONST[adv_not_found])
-            is_smaller = upper_bound < 1e9
-            CONST[is_smaller] = (lower_bound[is_smaller] + upper_bound[is_smaller]) / 2
-            CONST[(~is_smaller) * adv_not_found] *= 10
-
-        # return the best solution found
-        return (o_best_adversary, target_label)
-    
-    def set_target_mode(self, mode):
-        if mode == 'least_likely':
-            self.get_target = self.get_least_likely_label
-        elif mode == 'most_likely':
-            self.get_target = self.get_most_likely_label
-        else:
-            print('WARNING: set_target_mode was set to random. If unwanted, change "target_mode" arg to either "least_likely" or "most_likely".')
-            self.get_target = self.get_random_target_label
-    
-    @torch.no_grad()
-    def get_most_likely_label(self, inputs, labels=None):
-        outputs = self.get_output_with_eval_nograd(inputs)
-        if labels is None:
-            _, labels = torch.max(outputs, dim=1)
-        outputs[:, labels] = -1e+03
-        #_, target_labels = torch.max(torch.cat((outputs[:,:labels], outputs[:,labels+1:]), dim=1), dim=1)
-        _, target_labels = torch.max(outputs, dim=1)
-        return target_labels.long().to(self.device)
-
-    @torch.no_grad()
-    def get_least_likely_label(self, inputs, labels=None):
-        outputs = self.get_output_with_eval_nograd(inputs)
-        if labels is None:
-            _, labels = torch.max(outputs, dim=1)
-        n_classses = outputs.shape[-1]
-
-        target_labels = torch.zeros_like(labels)
-        for counter in range(labels.shape[0]):
-            l = list(range(n_classses))
-            l.remove(labels[counter])
-            _, t = torch.kthvalue(outputs[counter][l], self._kth_min)
-            target_labels[counter] = l[t]
-
-        return target_labels.long().to(self.device)
-
-    @torch.no_grad()
-    def get_random_target_label(self, inputs, labels=None):
-        outputs = self.get_output_with_eval_nograd(inputs)
-        if labels is None:
-            _, labels = torch.max(outputs, dim=1)
-        n_classses = outputs.shape[-1]
-
-        target_labels = torch.zeros_like(labels)
-        for counter in range(labels.shape[0]):
-            l = list(range(n_classses))
-            l.remove(labels[counter])
-            t = (len(l)*torch.rand([1])).long().to(self.device)
-            target_labels[counter] = l[t]
-
-        return target_labels.long().to(self.device)
-
-    @torch.no_grad()
-    def get_output_with_eval_nograd(self, inputs):
-        given_training = self.model.training
-        if given_training:
-            self.model.eval()
-        outputs = self.get_logits(self.model_trms(inputs))
-        if given_training:
-            self.model.train()
-        return outputs
-    
-    def get_logits(self, inputs, labels=None, *args, **kwargs):
-        logits = self.model(inputs)
-        return logits

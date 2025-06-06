@@ -192,7 +192,7 @@ class RAL(PerC_AL):
             # compute CIEDE2000 difference and get fidelity gradients, scale, update delta by color gradient
             d_map=ciede2000_diff(inputs_LAB,rgb2lab_diff(inputs+delta,self.device),self.device).unsqueeze(1)
             color_dis=torch.norm(d_map.view(batch_size,-1),dim=1)
-            color_loss=color_dis.sum()
+            color_loss=color_dis.mean()
             color_loss
             color_loss.backward()
             grad_color=delta.grad.clone()
@@ -209,12 +209,13 @@ class RAL(PerC_AL):
             mask=mask_best * mask_isadv
             color_l2_delta_bound_best[mask]=color_dis.data[mask]
             X_adv_round_best[mask]=X_adv_round[mask]
-            print(f'adv_loss:{loss}, color_loss:{color_loss}')
+            print(f'adv_loss:{loss}, color_loss:{color_loss}, is_adv:{mask_isadv}')
 
 
         return X_adv_round_best
     
     def check_if_adv(self, X_adv_round, labels):
+            X_adv_round = self.compress(X_adv_round, jpeg_quality=self.determined_quality.to(self.device))
             outputs = self.model(self.model_trms(X_adv_round))
             one_hot_labels = torch.eye(len(outputs[0]), device=self.device)[labels].to(self.device)
 
