@@ -31,7 +31,7 @@ class Attack(object):
         It basically changes training mode to eval during attack process.
         To change this, please see `set_model_training_mode`.
     """
-    def __init__(self, name, model, model_trms, write_protocol=False, protocol_file=''):
+    def __init__(self, name, model, model_trms, write_protocol=False, protocol_file='', *args, **kwargs):
         r"""
         Initializes internal attack state.
 

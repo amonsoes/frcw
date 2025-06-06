@@ -96,9 +96,9 @@ class PostTransforms:
         
         internal_jpeg_compr = None
         internal_compression_rate = None
-        if self.adversarial_opt.attack_compression and self.adversarial_opt.spatial_adv_type in ['rcw', 'far']:
+        if self.adversarial_opt.attack_compression and self.adversarial_opt.spatial_adv_type in ['rcw', 'far', 'ral']:
             adv_type = self.adversarial_opt.spatial_adv_type
-            compression_rate = self.adversarial_opt.compression_rate[0] if adv_type == 'rcw' else self.adversarial_opt.spatial_attack_params.far_jpeg_quality 
+            compression_rate = self.adversarial_opt.compression_rate[0] if adv_type in ['rcw', 'ral'] else self.adversarial_opt.spatial_attack_params.far_jpeg_quality 
             augmenter = Augmenter(compression_rate=compression_rate)
             internal_jpeg_compr = augmenter.jpeg_compression
             internal_compression_rate = compression_rate

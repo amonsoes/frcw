@@ -46,6 +46,8 @@ def build_args():
     parser.add_argument('--jifgsm_compr_type', type=str, default='shin', help='one of ["shin","reich"]')
     parser.add_argument('--eta', type=float, default=0.6, help='set eta percentile in FAR to decide on the most important DCT coeffs')
     parser.add_argument('--far_jpeg_quality', type=int, default=70, help='set internal jpeg quality for fast adv rounding')
+    parser.add_argument('--alpha_c', type=float, default=0.1, help='set fidelity loss scalar for alrernating loss adversarial attacks')
+    parser.add_argument('--alpha_l', type=float, default=1.0, help='set adversarial loss scalar for alrernating loss adversarial attacks')
         
     # optimization-based attacks
     parser.add_argument('--c', type=float, default=1.0, help='tradeoff variable that balances delta minimization with adv loss')

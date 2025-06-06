@@ -577,3 +577,4 @@ class EnsembleRCW(CW):
         
         self.write_timing('ensemble', self.n)
         return (best_adv_images_from_starts, target_labels)
+

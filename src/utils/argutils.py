@@ -191,6 +191,7 @@ def adversarial_setup(args, filename):
                                                         'ycw',
                                                         'varrcw',
                                                         'perccw',
+                                                        'percal',
                                                         'ercw',
                                                         'uap',
                                                         'dctcw']:
@@ -248,6 +249,17 @@ def adversarial_setup(args, filename):
                 spatial_attack_params.verbose_cw = args.verbose_cw
                 spatial_attack_params.target_mode = args.target_mode
                 spatial_attack_params.batch_size = args.batchsize
+            
+            if adversarial_opt.spatial_adv_type in ['percal', 'ral']:
+                spatial_attack_params.kappa = args.kappa
+                spatial_attack_params.steps = args.steps
+                spatial_attack_params.attack_lr = args.attack_lr
+                spatial_attack_params.alpha_c = args.alpha_c
+                spatial_attack_params.alpha_l = args.alpha_l
+                spatial_attack_params.verbose_cw = args.verbose_cw
+                spatial_attack_params.target_mode = args.target_mode
+                spatial_attack_params.batch_size = args.batchsize
+
                 
                 if adversarial_opt.spatial_adv_type in ['rcw', 'wrcw', 'ycw', 'varrcw','ercw']:
                     spatial_attack_params.rcw_comp_lower_bound = args.rcw_comp_lower_bound

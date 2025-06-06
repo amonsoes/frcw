@@ -8,6 +8,8 @@ from src.model.pretrained import CNNLoader
 from src.adversarial.hpf_mask import HPFMasker
 from src.adversarial.iqm import ImageQualityMetric
 from src.adversarial.custom_cw import CW
+from src.adversarial.robust_perc import RAL
+from src.adversarial.perc_cw import PerC_AL
 from src.adversarial.robust_cw import RCW, EnsembleRCW
 from src.adversarial.jpeg_ifgm import JIFGSM
 from src.adversarial.adversarial_rounding import FastAdversarialRounding
@@ -78,6 +80,8 @@ class AttackLoader:
                            'vifcw',
                            'msssimcw',
                            'rcw',
+                           'ral',
+                           'percal',
                            'ensemblercw',
                            'wrcw',
                            'ycw',
@@ -169,7 +173,7 @@ class WhiteBoxAttack:
         self.ssim_score = []
         self.dists_score = []
         self.n = 1
-        if attack_type == 'rcw':
+        if attack_type in ['rcw', 'ral']:
             self.call_fn = self.attack_rcw
         elif attack_type == 'far':
             self.call_fn = self.attack_far
@@ -290,6 +294,10 @@ class WhiteBoxAttack:
             attack = CW(model, model_trms=self.model_trms, *args, **kwargs)
         elif attack_type == 'ensemblercw':
             attack = EnsembleRCW(model, model_trms=self.model_trms, *args, **kwargs)
+        elif attack_type == 'percal':
+            attack = PerC_AL(model, model_trms=self.model_trms, *args, **kwargs)
+        elif attack_type == 'ral':
+            attack = RAL(model, model_trms=self.model_trms, *args, **kwargs)
         elif attack_type == 'rcw':
             if self.dataset_type == 'nips17':
                 cqe_init = 'random'
