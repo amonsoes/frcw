@@ -143,13 +143,15 @@ class RAL(PerC_AL):
         self.kappa = self.original_kappa
         inputs = inputs.to(self.device)
         labels = labels.to(self.device)
+        ori_labels = labels
 
         self.determined_quality, n_steps = self.search_for_q(cqe_image=cqe_image, ref_image=inputs)
         self.determined_quality = self.determined_quality.squeeze(0)
         self.cqe_steps_log.append(n_steps)
 
         if self.targeted:
-            labels = self.get_target_label(inputs, labels)
+            comp_inputs = self.compress(inputs, jpeg_quality=self.determined_quality.to(self.device))
+            labels = self.get_target_label(comp_inputs, labels)
 
         if inputs.min() < 0 or inputs.max() > 1: raise ValueError('Input values should be in the [0, 1] range.')
 
@@ -209,7 +211,7 @@ class RAL(PerC_AL):
             mask=mask_best * mask_isadv
             color_l2_delta_bound_best[mask]=color_dis.data[mask]
             X_adv_round_best[mask]=X_adv_round[mask]
-            print(f'adv_loss:{loss}, color_loss:{color_loss}, is_adv:{mask_isadv}')
+            print(f'adv_loss:{loss}, color_loss:{color_loss}, is_adv:{mask_isadv}, adjusted: {mask}')
 
 
         return X_adv_round_best
