@@ -291,7 +291,7 @@ def ciede2000_diff(lab1, lab2,device):
 
 def quantization(x):
    """quantize the continus image tensors into 255 levels (8 bit encoding)"""
-   x_quan=torch.round(x*255)/255
+   x_quan=x #torch.round(x*255)/255
    return torch.clamp(x_quan, min=0.0, max=1.0)
 
 
