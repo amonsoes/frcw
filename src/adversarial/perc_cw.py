@@ -337,7 +337,8 @@ class PerC_AL(Attack):
         self.batch_size = batch_size
         self.loss = nn.CrossEntropyLoss(reduction='mean')
         self.supported_mode = ['default', 'targeted']
-        self.set_target_mode(target_mode)
+        if target_mode not in ['random', 'default']:
+            self.set_target_mode(target_mode)
 
     def set_target_mode(self, mode):
         if mode == 'least_likely':
@@ -369,7 +370,8 @@ class PerC_AL(Attack):
         labels = labels.to(self.device)
 
         if self.targeted:
-            labels = self.get_target_label(inputs, labels)
+            comp_inputs = self.compress(inputs, jpeg_quality=self.determined_quality.to(self.device))
+            labels = self.get_target_label(comp_inputs, labels)
 
         if inputs.min() < 0 or inputs.max() > 1: raise ValueError('Input values should be in the [0, 1] range.')
 
@@ -418,7 +420,7 @@ class PerC_AL(Attack):
             delta.data=(inputs+delta.data).clamp(0,1)-inputs
 
             # quantize image (not included in any backward comps) & check if samples are adversarial
-            X_adv_round=quantization(inputs+delta.data)
+            X_adv_round=inputs+delta.data
             mask_isadv = self.check_if_adv(X_adv_round, labels)
 
             # update adversarial image if: (1) color dist is less (2) images are adversarial

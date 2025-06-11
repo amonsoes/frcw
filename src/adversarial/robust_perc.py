@@ -192,7 +192,7 @@ class RAL(PerC_AL):
             delta.data[~mask_isadv]=delta.data[~mask_isadv]+alpha_l*(grad_a.permute(1,2,3,0)/torch.norm(grad_a.view(batch_size,-1),dim=1)).permute(3,0,1,2)[~mask_isadv]  
             
             # compute CIEDE2000 difference and get fidelity gradients, scale, update delta by color gradient
-            d_map=ciede2000_diff(inputs_LAB,rgb2lab_diff(inputs+delta,self.device),self.device).unsqueeze(1)
+            d_map=ciede2000_diff(inputs_LAB, rgb2lab_diff(inputs+delta,self.device),self.device).unsqueeze(1)
             color_dis=torch.norm(d_map.view(batch_size,-1),dim=1)
             color_loss=color_dis.mean()
             color_loss
@@ -203,7 +203,7 @@ class RAL(PerC_AL):
             delta.data=(inputs+delta.data).clamp(0,1)-inputs
 
             # quantize image (not included in any backward comps) & check if samples are adversarial
-            X_adv_round=quantization(inputs+delta.data)
+            X_adv_round=inputs+delta.data
             mask_isadv = self.check_if_adv(X_adv_round, labels)
 
             # update adversarial image if: (1) color dist is less (2) images are adversarial
