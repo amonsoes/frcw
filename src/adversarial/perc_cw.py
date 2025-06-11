@@ -292,7 +292,7 @@ def ciede2000_diff(lab1, lab2,device):
 def quantization(x):
    """quantize the continus image tensors into 255 levels (8 bit encoding)"""
    x_quan=torch.round(x*255)/255
-   return x_quan
+   return torch.clamp(x_quan, min=0.0, max=1.0)
 
 
 class PerC_AL(Attack):
@@ -420,7 +420,7 @@ class PerC_AL(Attack):
             delta.data=(inputs+delta.data).clamp(0,1)-inputs
 
             # quantize image (not included in any backward comps) & check if samples are adversarial
-            X_adv_round=inputs+delta.data
+            X_adv_round = quantization(inputs+delta.data)
             mask_isadv = self.check_if_adv(X_adv_round, labels)
 
             # update adversarial image if: (1) color dist is less (2) images are adversarial
@@ -434,20 +434,20 @@ class PerC_AL(Attack):
     
     def check_if_adv(self, X_adv_round, labels):
             outputs = self.model(self.model_trms(X_adv_round))
-            one_hot_labels = torch.eye(len(outputs[0]), device=self.device)[labels].to(self.device)
-
-            i, _ = torch.max((1-one_hot_labels)*outputs, dim=1) # get the largest logit
+            one_hot_labels = torch.eye(len(outputs[0]), device=self.device)[labels].to(self.device) #labels -> untargeted: ground truth, targeted: target labels
             #outputs[outputs.argmax(dim=1)] = -1e10
 
             if self.targeted:
+                i, _ = torch.max((1-one_hot_labels)*outputs, dim=1) # get the largest logit
                 j = torch.masked_select(outputs, one_hot_labels.bool()) # get the target logit
                 adv_loss = (i - j) + self.kappa
                 is_adv = adv_loss <= 0.0
                 #return torch.clamp((i-j), min=-self.kappa)
             else:
+                i, _ = torch.max(outputs * one_hot_labels, dim=1) # get the ground truth logit
                 label_mask = torch.full_like(labels.view(-1,1), -1e+03).to(torch.float32)
                 outputs.scatter_(1, labels.view(-1,1), label_mask)
-                j, _ = torch.max(outputs, dim=1)
+                j, _ = torch.max(outputs - (one_hot_labels * 1e+03), dim=1) # get the max logit that is not the ground truth
                 adv_loss = (i - j) + self.kappa
                 is_adv = adv_loss <= 0.0
             return is_adv

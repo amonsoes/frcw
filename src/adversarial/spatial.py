@@ -225,9 +225,9 @@ class WhiteBoxAttack:
             self.l2_norm.extend([l2.item() for l2 in self.get_l2(orig_x, perturbed_x, )])
             if self.image_metric is not None:
                 mad_r, ssim_r, dists_r = self.image_metric(orig_x, perturbed_x)
-                self.mad_score.extend(mad_r)
-                self.ssim_score.extend(ssim_r)
-                self.dists_score.extend(dists_r)
+                self.mad_score.extend(mad_r) if x.shape[0] > 1 else self.mad_score.append(mad_r)
+                self.ssim_score.extend(ssim_r) if x.shape[0] > 1 else self.ssim_score.append(ssim_r)
+                self.dists_score.extend(dists_r) if x.shape[0] > 1 else self.dists_score.append(dists_r)
             #torchvision.utils.save_image(orig_x, f'{self.orig_save_dir}/{self.n}.png', format='PNG')
             #torchvision.utils.save_image(perturbed_x, f'{self.save_dir}/{self.n}.png', format='PNG')
             self.n += 1
