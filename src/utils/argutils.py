@@ -261,11 +261,11 @@ def adversarial_setup(args, filename):
                 spatial_attack_params.batch_size = args.batchsize
 
                 
-                if adversarial_opt.spatial_adv_type in ['rcw', 'wrcw', 'ycw', 'varrcw','ercw']:
-                    spatial_attack_params.rcw_comp_lower_bound = args.rcw_comp_lower_bound
-                    spatial_attack_params.rcw_beta = args.rcw_beta
-                    if adversarial_opt.spatial_adv_type == 'rcw':
-                        spatial_attack_params.q_search_type = args.q_search_type
+            if adversarial_opt.spatial_adv_type in ['rcw', 'wrcw', 'ycw', 'varrcw','ercw']:
+                spatial_attack_params.rcw_comp_lower_bound = args.rcw_comp_lower_bound
+                spatial_attack_params.rcw_beta = args.rcw_beta
+                if adversarial_opt.spatial_adv_type == 'rcw':
+                    spatial_attack_params.q_search_type = args.q_search_type
             if adversarial_opt.spatial_adv_type in ['jifgsm', 'cvfgsm', 'far']:
                 if args.is_targeted:
                     spatial_attack_params.target_mode = args.target_mode

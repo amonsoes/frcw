@@ -219,6 +219,7 @@ class RAL(PerC_AL):
     
     def check_if_adv(self, X_adv_round, labels):
             X_adv_round = self.compress(X_adv_round, jpeg_quality=self.determined_quality.to(self.device))
+            # letze varianz vom nachfolgenden prozedere: ersetz dieses JPEG compression mit der tatsächlichen (der non-differenzierbaren)
             outputs = self.model(self.model_trms(X_adv_round))
             one_hot_labels = torch.eye(len(outputs[0]), device=self.device)[labels].to(self.device)
 

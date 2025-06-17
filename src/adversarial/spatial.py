@@ -1,6 +1,7 @@
 import torch
 import csv
 import os
+import torchvision
 
 from torchvision import transforms as T
 from torchvision.io import encode_jpeg, decode_image
@@ -163,6 +164,8 @@ class WhiteBoxAttack:
         self.attack = self.load_attack(self.model, attack_type, surrogate_loss, hpf_masker, *args, **kwargs)
         self.to_tensor = T.ConvertImageDtype(torch.float32)
         self.jpeg_compr_obj = jpeg_compr_obj
+        self.orig_save_dir = f'./data/survey_data/{attack_type}/vanilla/'
+        self.save_dir = f'./data/survey_data/{attack_type}/'
         if kwargs.get('protocol_file') is None:
             protocol_file = ''
         else:
@@ -228,8 +231,8 @@ class WhiteBoxAttack:
                 self.mad_score.extend(mad_r) if x.shape[0] > 1 else self.mad_score.append(mad_r)
                 self.ssim_score.extend(ssim_r) if x.shape[0] > 1 else self.ssim_score.append(ssim_r)
                 self.dists_score.extend(dists_r) if x.shape[0] > 1 else self.dists_score.append(dists_r)
-            #torchvision.utils.save_image(orig_x, f'{self.orig_save_dir}/{self.n}.png', format='PNG')
-            #torchvision.utils.save_image(perturbed_x, f'{self.save_dir}/{self.n}.png', format='PNG')
+            torchvision.utils.save_image(orig_x, f'{self.orig_save_dir}/{self.n}.png', format='PNG')
+            torchvision.utils.save_image(perturbed_x, f'{self.save_dir}/{self.n}.png', format='PNG')
             self.n += 1
         return perturbed_x
     
